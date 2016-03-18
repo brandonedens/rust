@@ -69,6 +69,15 @@ fn declare_raw_fn(ccx: &CrateContext, name: &str, callconv: llvm::CallConv, ty: 
         llvm::SetFunctionAttribute(llfn, llvm::Attribute::NoRedZone)
     }
 
+    let opt_size = ccx.tcx().sess.opts.cg.opt_size.unwrap_or(0);
+    if opt_size >= 1 {
+            llvm::SetFunctionAttribute(llfn, llvm::Attribute::OptimizeForSize);
+    }
+    if opt_size >= 2 {
+        llvm::SetFunctionAttribute(llfn, llvm::Attribute::MinSize);
+    }
+
+
     llfn
 }
 
