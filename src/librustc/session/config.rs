@@ -55,6 +55,13 @@ pub enum OptLevel {
 }
 
 #[derive(Clone, Copy, PartialEq)]
+pub enum OptSize {
+    No,
+    Default, // -Os
+    Aggressive // -Oz
+}
+
+#[derive(Clone, Copy, PartialEq)]
 pub enum DebugInfoLevel {
     NoDebugInfo,
     LimitedDebugInfo,
@@ -115,6 +122,7 @@ pub struct Options {
 
     pub gc: bool,
     pub optimize: OptLevel,
+    pub opt_size: OptSize,
     pub debug_assertions: bool,
     pub debuginfo: DebugInfoLevel,
     pub lint_opts: Vec<(String, lint::Level)>,
@@ -246,6 +254,7 @@ pub fn basic_options() -> Options {
         crate_types: Vec::new(),
         gc: false,
         optimize: OptLevel::No,
+        opt_size: OptSize::No,
         debuginfo: NoDebugInfo,
         lint_opts: Vec::new(),
         lint_cap: None,
@@ -1133,6 +1142,17 @@ pub fn build_session_options(matches: &getopts::Matches) -> Options {
             }
         }
     };
+    let opt_size = match cg.opt_size {
+        None => OptSize::No,
+        Some(0) => OptSize::No,
+        Some(1) => OptSize::Default,
+        Some(2) => OptSize::Aggressive,
+        Some(arg) => {
+            early_error(error_format, &format!("size optimization level needs to be \
+                                                      between 0-2 (instead was `{}`)",
+                                                      arg));
+        }
+    };
     let debug_assertions = cg.debug_assertions.unwrap_or(opt_level == OptLevel::No);
     let gc = debugging_opts.gc;
     let debuginfo = if matches.opt_present("g") {
@@ -1217,6 +1237,7 @@ pub fn build_session_options(matches: &getopts::Matches) -> Options {
         crate_types: crate_types,
         gc: gc,
         optimize: opt_level,
+        opt_size: opt_size,
         debuginfo: debuginfo,
         lint_opts: lint_opts,
         lint_cap: lint_cap,
