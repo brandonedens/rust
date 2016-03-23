@@ -28,17 +28,25 @@
 //! one function. Currently, the actual symbol is declared in the standard
 //! library, but the location of this may change over time.
 
-#![allow(dead_code, missing_docs)]
+#![allow(dead_code, missing_docs, unused_variables, unreachable_code, unused_imports)]
 #![unstable(feature = "core_panic",
             reason = "internal details of the implementation of the `panic!` \
                       and related macros",
             issue = "0")]
 
 use fmt;
+use ::intrinsics::abort;
+use ::intrinsics::breakpoint;
 
-#[cold] #[inline(never)] // this is the slow path, always
+
+#[inline(always)]
 #[lang = "panic"]
 pub fn panic(expr_file_line: &(&'static str, &'static str, u32)) -> ! {
+    unsafe {
+        asm!("bkpt 0");
+        breakpoint();
+        abort();
+    }
     // Use Arguments::new_v1 instead of format_args!("{}", expr) to potentially
     // reduce size overhead. The format_args! macro uses str's Display trait to
     // write expr, which calls Formatter::pad, which must accommodate string
@@ -49,16 +57,26 @@ pub fn panic(expr_file_line: &(&'static str, &'static str, u32)) -> ! {
     panic_fmt(fmt::Arguments::new_v1(&[expr], &[]), &(file, line))
 }
 
-#[cold] #[inline(never)]
+#[inline(always)]
 #[lang = "panic_bounds_check"]
 fn panic_bounds_check(file_line: &(&'static str, u32),
                      index: usize, len: usize) -> ! {
+    unsafe {
+        asm!("bkpt 0");
+        breakpoint();
+        abort();
+    }
     panic_fmt(format_args!("index out of bounds: the len is {} but the index is {}",
                            len, index), file_line)
 }
 
-#[cold] #[inline(never)]
+#[inline(always)]
 pub fn panic_fmt(fmt: fmt::Arguments, file_line: &(&'static str, u32)) -> ! {
+    unsafe {
+        asm!("bkpt 0");
+        breakpoint();
+        abort();
+    }
     #[allow(improper_ctypes)]
     extern {
         #[lang = "panic_fmt"]
